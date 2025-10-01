@@ -1,0 +1,22 @@
+scraper:
+  subreddits:
+    - internships
+  poll_interval: 5m
+  base_url: https://old.reddit.com
+
+storage:
+  type: sqlite
+  path: ./data/posts.db
+
+server:
+  port: "8080"
+  host: 0.0.0.0
+
+notifications:
+  discord:
+    webhook_url: ${DISCORD_WEBHOOK_URL}
+
+ai:
+  provider: openai
+  model: gpt-4
+  api_key: ${OPENAI_API_KEY}
