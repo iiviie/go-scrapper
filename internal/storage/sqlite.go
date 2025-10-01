@@ -44,6 +44,7 @@ func (s *SQLiteStorage) initDB() error {
 		is_opportunity BOOLEAN DEFAULT FALSE
 	);
 
+	CREATE INDEX IF NOT EXISTS idx_timestamp ON processed_posts(timestamp);
 	CREATE INDEX IF NOT EXISTS idx_processed_at ON processed_posts(processed_at);
 	CREATE INDEX IF NOT EXISTS idx_is_opportunity ON processed_posts(is_opportunity);
 	`
@@ -99,7 +100,7 @@ func (s *SQLiteStorage) SavePost(post *models.Post) error {
 // GetAllPosts retrieves all processed posts
 func (s *SQLiteStorage) GetAllPosts() ([]*models.Post, error) {
 	query := `SELECT post_id, title, body, author, url, timestamp, comments, processed_at
-	          FROM processed_posts ORDER BY processed_at DESC`
+	          FROM processed_posts ORDER BY timestamp DESC`
 
 	rows, err := s.db.Query(query)
 	if err != nil {

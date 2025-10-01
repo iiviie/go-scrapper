@@ -3,6 +3,7 @@ package scraper
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -79,12 +80,36 @@ func (rs *RedditScraper) scrapeSubreddit(subreddit string) ([]*models.Post, erro
 			return
 		}
 
+		// Extract timestamp from data-timestamp attribute (Unix timestamp in seconds)
+		timestampStr := e.Attr("data-timestamp")
+		var postTime time.Time
+		if timestampStr != "" {
+			if timestampMillis, err := strconv.ParseInt(timestampStr, 10, 64); err == nil {
+				postTime = time.Unix(timestampMillis/1000, 0)
+			} else {
+				log.Printf("Error parsing timestamp: %v", err)
+				postTime = time.Now()
+			}
+		} else {
+			// Fallback: try to get from time element
+			timeStr := e.ChildAttr("time", "datetime")
+			if timeStr != "" {
+				if parsedTime, err := time.Parse(time.RFC3339, timeStr); err == nil {
+					postTime = parsedTime
+				} else {
+					postTime = time.Now()
+				}
+			} else {
+				postTime = time.Now()
+			}
+		}
+
 		post := &models.Post{
 			ID:        postID,
 			Title:     e.ChildText("a.title"),
 			Author:    e.ChildAttr("a.author", "href"),
 			URL:       e.Request.AbsoluteURL(e.ChildAttr("a.title", "href")),
-			Timestamp: time.Now(),
+			Timestamp: postTime,
 		}
 
 		// Extract author from href (format: /user/username)
@@ -100,7 +125,7 @@ func (rs *RedditScraper) scrapeSubreddit(subreddit string) ([]*models.Post, erro
 		}
 
 		posts = append(posts, post)
-		log.Printf("Found new post: %s (ID: %s)", post.Title, post.ID)
+		log.Printf("Found new post: %s (ID: %s, Posted: %s)", post.Title, post.ID, post.Timestamp.Format("2006-01-02 15:04:05"))
 	})
 
 	c.OnError(func(r *colly.Response, err error) {
